@@ -1,4 +1,4 @@
-## SHAP Value analysis
+# SHAP Value analysis
 
 This folder contains files and python notebooks for the SHAP analysis of the Murphy+2025 Thermospheric Density Random Forest Model [1]_ , specifically FISM2-GEO.
 
@@ -6,11 +6,11 @@ The SHAP analysis could be used for general random forest models, though it is d
 
 Dependencies
 ------------
-pandas
-fasttreeshap
-numpy
-matplotlib
-cartopy
+- pandas
+- fasttreeshap
+- numpy
+- matplotlib
+- cartopy
 
 sklearn is required to train the random forest (RF) model (see Kyle Murphy notebook); following classes assume that RF model has been saved to pickle with file option 'wb', e.g.
 
