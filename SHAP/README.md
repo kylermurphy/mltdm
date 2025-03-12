@@ -11,6 +11,7 @@ Dependencies
 - numpy
 - matplotlib
 - cartopy
+- h5py(?; use pandas to save/load hdf5 files)
 
 sklearn is required to train the random forest (RF) model (see Kyle Murphy notebook); following classes assume that RF model has been saved to pickle with file option 'wb', e.g.
 
