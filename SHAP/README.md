@@ -24,3 +24,7 @@ and that the train-test split of the original satdrag_database*hdf5 files
 References
 ----------
 .. [1] Murphy, K.M., Halford, A., et al. "Understanding and Modeling ... Neutral Density Using Random Forests", Space Weather, 2025, https://doi.org/10.1029/2024SW003928
+
+Licensing
+---------
+shap_analysis.py uses code copied from Apexpy (https://github.com/aburrell/apexpy/) and used under MIT license (Copyright (c) 2015 Christer van der Meeren).
