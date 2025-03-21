@@ -51,7 +51,7 @@ class config():
         
         req_keys = ['data_dir','fx_dir','fism_flare', 'omni']
         
-        with open('./mltdm/mltdm.yaml') as stream:
+        with open(self.yaml) as stream:
             try:
                 dat = yaml.safe_load(stream)
             except yaml.YAMLError as exc:
