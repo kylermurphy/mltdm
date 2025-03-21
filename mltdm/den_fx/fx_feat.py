@@ -40,8 +40,7 @@ def create_feat():
     feat_dat = feat_dat.reset_index()
     feat_dat.to_hdf(out_f,key='fx_den_feat',
                     complevel=2,format='table', data_columns=['DateTime'])
-    
-    
+     
     
 def append_feat():
     pass
