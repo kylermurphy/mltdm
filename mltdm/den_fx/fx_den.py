@@ -3,6 +3,8 @@ import numpy as np
 
 import mltdm.den_fx
 
+from .fx_feat import load_feat
+
 # plotting
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
@@ -13,28 +15,19 @@ from mltdm.subsol import subsol
 
 class fx_den():
 
-    def __init__(self, n_lat: int=30, n_mlt: int=24, input_f: str=None):
-
-        self.feat_cols = ['1300_02','43000_09','85550_13','94400_18','SYM_H index','AE']
+    def __init__(self, n_lat: int=30, n_mlt: int=24, sdate: str='2003-01-01',
+                 input_f: str=None, dropAE: bool=False):
+        
+        if dropAE:
+            self.feat_cols = ['1300_02','43000_09','94400_18','SYM_H index']
+        else:
+            self.feat_cols = ['1300_02','43000_09','85550_13','94400_18','SYM_H index','AE']
         self.input_f = input_f
         self.rfmod = mltdm.den_fx.den_fx_mod
-        self.load_mod_feat()
-
         self.n_lat = n_lat
         self.n_mlt = n_mlt
         self.setup_grid()
 
-    def load_mod_feat(self):
-
-        if not self.input_f: 
-            print('Must provide an input file.')
-            print('Before continuing provodie an input file')
-            print('self.input = path to file')
-            print('self.load_mod_feat()')
-        else:
-            mdl_dat = pd.read_pickle(self.input_f) 
-            self.feat = mdl_dat[-2].copy().reset_index(drop=True)
-            del mdl_dat
 
     def setup_grid(self):
 
@@ -88,7 +81,6 @@ class fx_den():
         return grid
 
     def make_geo_grid(self, event):
-        evt_date = event['DateTime']
         if isinstance(event, pd.Series):
             # need to convert to dataFrame for grid generation
             evt = event.to_frame().transpose()
@@ -120,6 +112,8 @@ class fx_den():
 
     def pred_den_mlt(self, sdate: str='2003-01-01 00:00:00', edate: str=None, hemisphere: str='North'):
         
+        self.feat = load_feat(sdate=sdate,edate=edate)[self.feat_cols+['DateTime']]
+        
         if edate:
             ev_id = (self.feat['DateTime'] >= sdate) & (self.feat['DateTime'] <= edate)
             event = self.feat.loc[ev_id, self.feat_cols+['DateTime']].copy()
@@ -140,7 +134,9 @@ class fx_den():
         return grid
     
     def pred_den_geo(self, sdate: str='2003-01-01 00:00:00', edate: str=None):
-
+        
+        self.feat = load_feat(sdate=sdate,edate=edate)[self.feat_cols+['DateTime']]
+        
         if edate:
             ev_id = (self.feat['DateTime'] >= sdate) & (self.feat['DateTime'] <= edate)
             event = self.feat.loc[ev_id, self.feat_cols+['DateTime']].copy()
