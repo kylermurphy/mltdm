@@ -10,18 +10,24 @@ import netCDF4 as nc
 import mltdm
 
 
+# TODO I think this should be it's own submodule
+# TODO it could get quite big as we use more datasets
 
 
 
-
-def fism_flare(http_path: str=mltdm.c_dat['fism_flare'], 
+def fism_flare(http_path: str=mltdm.c_dat['fism_flare'],
+               data_path: str=mltdm.c_dat['data_dir'],
                rcols: list=None):
     
     flare_f = 'flare_bands.nc'
-    nc_f = os.path.join(http_path, flare_f)
-
-    with requests.get(nc_f,stream=True) as r:
-       dat = nc.Dataset('in-mem-file', mode='r', memory=r.content)    
+    http_f = os.path.join(http_path, flare_f)
+    local_f = os.path.join(data_path, flare_f)
+    
+    if os.path.exists(local_f):
+        dat = nc.Dataset(local_f)
+    else:
+        with requests.get(http_f,stream=True) as r:
+            dat = nc.Dataset('in-mem-file', mode='r', memory=r.content)    
     
     wvlen = np.array(dat.variables['wavelength'][:]) # median wavelengt
     wvbwd = np.array(dat.variables['band_width'][:]) # wavelength bandwidth
