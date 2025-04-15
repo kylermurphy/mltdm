@@ -3,7 +3,7 @@ import numpy as np
 
 import mltdm.den_fx
 
-from .fx_feat import load_feat
+from mltdm.den_fx.fx_feat import load_feat
 
 # plotting
 import matplotlib.pyplot as plt
@@ -15,7 +15,7 @@ from mltdm.subsol import subsol
 
 class fx_den():
 
-    def __init__(self, n_lat: int=30, n_mlt: int=24, sdate: str='2003-01-01',
+    def __init__(self, n_lat: int=30, n_mlt: int=24,
                  input_f: str=None, dropAE: bool=False):
         
         if dropAE:
@@ -150,8 +150,32 @@ class fx_den():
 
         return grid
 
-    def pred_den_orb(self):
-        pass
+    def pred_den_orb(self, spos: np.ndarray, 
+                     tol: pd.Timedelta=pd.Timedelta('2.5 minute')):
+        
+        # spos should have datetime
+        # sat lat and sat mlt to derive densities
+        # the dataframe is then combined with the feature
+        # dataframe to derive densities
+        
+        # load feature data
+        feat = load_feat(sdate=spos['DateTime'].min(), 
+                         edate=spos['DateTime'].max())
+        
+        # add cos and sin to the position array
+        spos["cos_SatMagLT"] = np.cos(spos['SatMagLT']*2*np.pi/24.)
+        spos["sin_SatMagLT"] = np.sin(spos['SatMagLT']*2*np.pi/24.)
+        
+        spos = pd.merge_asof(left=spos,right=feat,
+                                 left_on='DateTime',right_on='DateTime',
+                                 direction='nearest',tolerance=tol)
+        
+        pred_cols = self.feat_cols + ["SatLat","cos_SatMagLT","sin_SatMagLT"]
+        
+        spos['400 km den'] = self.rfmod.predict(
+            spos[pred_cols])*(10**-12)
+        
+        return spos
     
     def plot_dpolar(self, den, ax=None, fig=None, date=None, theta_offset: float =-0.5*np.pi, **kwargs):
         # check if an axis and figure are passed
@@ -225,5 +249,51 @@ class fx_den():
 
     def plot_dorbit():
         pass
+
+
+# lets create a simulated spacecraft orbit from a previous orbit
+
+# simulated orbit time
+sdate = '2024-05-08'
+edate = '2024-05-17'
+d_ser = pd.date_range(start=sdate, end=edate, freq='5min')
+
+# start time of data to grab orbit
+dusk_t = '2008-05-10 00:00:00'
+
+
+# read in data and prep with new DateTime
+ch_col = ['DateTime_gr', 'SatLat', 'SatLon', 'SatMagLT']
+ch_df = pd.read_hdf(r"D:\data\SatDensities\satdrag_database_grace_CHAMP.hdf5")[ch_col]
+
+# get index of startime
+dusk_d = ch_df['DateTime_gr'] > '2008-05-10 00:00:00'
+dusk_i = ch_df[dusk_d].index[0] 
+
+ch_df = ch_df.iloc[dusk_i:dusk_i+d_ser.shape[0]].copy()
+ch_df['DateTime'] = d_ser
+ch_df = ch_df.reset_index(drop=True)
+
+rf_mod = fx_den()
+sat_orb = rf_mod.pred_den_orb(ch_df)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
