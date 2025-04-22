@@ -251,31 +251,6 @@ class fx_den():
         pass
 
 
-# lets create a simulated spacecraft orbit from a previous orbit
-
-# simulated orbit time
-sdate = '2024-05-08'
-edate = '2024-05-17'
-d_ser = pd.date_range(start=sdate, end=edate, freq='5min')
-
-# start time of data to grab orbit
-dusk_t = '2008-05-10 00:00:00'
-
-
-# read in data and prep with new DateTime
-ch_col = ['DateTime_gr', 'SatLat', 'SatLon', 'SatMagLT']
-ch_df = pd.read_hdf(r"D:\data\SatDensities\satdrag_database_grace_CHAMP.hdf5")[ch_col]
-
-# get index of startime
-dusk_d = ch_df['DateTime_gr'] > '2008-05-10 00:00:00'
-dusk_i = ch_df[dusk_d].index[0] 
-
-ch_df = ch_df.iloc[dusk_i:dusk_i+d_ser.shape[0]].copy()
-ch_df['DateTime'] = d_ser
-ch_df = ch_df.reset_index(drop=True)
-
-rf_mod = fx_den()
-sat_orb = rf_mod.pred_den_orb(ch_df)
 
 
 
