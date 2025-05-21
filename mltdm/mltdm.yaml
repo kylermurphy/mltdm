@@ -5,6 +5,7 @@ data_dir: D:\data\mltdm
 
 # Path Fixed Altitude Density Model
 fx_dir: D:\data\mltdm\fx_den_bz2.skops
+fxnoAE_dir: D:\data\mltdm\fx_den_noAE_bz2.skops
 
 # Link to FISM Flare Bands
 fism_flare: https://lasp.colorado.edu/eve/data_access/eve_data/fism/flare_bands/
