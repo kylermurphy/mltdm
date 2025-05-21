@@ -12,3 +12,4 @@ from skops.io import load as sio_load
 c_dat = config().dat
 
 den_fx_mod = sio_load(c_dat['fx_dir'])
+den_fxnoAE_mod = sio_load(c_dat['fxnoAE_dir'])

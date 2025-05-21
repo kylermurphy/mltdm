@@ -16,14 +16,20 @@ from mltdm.subsol import subsol
 class fx_den():
 
     def __init__(self, n_lat: int=30, n_mlt: int=24,
-                 input_f: str=None, dropAE: bool=False):
+                 input_f: str=None, dropAE: bool=True):
         
         if dropAE:
-            self.feat_cols = ['1300_02','43000_09','94400_18','SYM_H index']
+            self.feat_cols = ['1300_02','43000_09','85550_13','94400_18',
+                              'SYM_H index']
+            self.rfmod = mltdm.den_fx.den_fxnoAE_mod
+            self.AE = False
         else:
-            self.feat_cols = ['1300_02','43000_09','85550_13','94400_18','SYM_H index','AE']
+            self.feat_cols = ['1300_02','43000_09','85550_13','94400_18',
+                              'SYM_H index','AE']
+            self.rfmod = mltdm.den_fx.den_fx_mod
+            self.AE = True
         self.input_f = input_f
-        self.rfmod = mltdm.den_fx.den_fx_mod
+        
         self.n_lat = n_lat
         self.n_mlt = n_mlt
         self.setup_grid()
