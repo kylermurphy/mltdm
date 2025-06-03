@@ -1,9 +1,7 @@
 import pandas as pd
 import numpy as np
 
-import mltdm.den_fx
 
-from mltdm.den_fx.fx_feat import load_feat
 
 # plotting
 import matplotlib.pyplot as plt
@@ -11,7 +9,19 @@ from matplotlib.gridspec import GridSpec
 import cartopy.crs as ccrs
 from cartopy.feature.nightshade import Nightshade
 
+# loading models
+from skops.io import load as sio_load
+
+
 from mltdm.subsol import subsol
+from mltdm.config import config
+from mltdm.den_fx.fx_feat import load_feat
+
+
+# get varaibale from the configuration file
+# this is loaded previously but it's loaded
+# again here for transparency
+c_dat = config().dat
 
 class fx_den():
 
@@ -21,13 +31,29 @@ class fx_den():
         if dropAE:
             self.feat_cols = ['1300_02','43000_09','85550_13','94400_18',
                               'SYM_H index']
-            self.rfmod = mltdm.den_fx.den_fxnoAE_mod
+            
+            # only load the AE model once
+            if 'fx_noAE_mod' in globals():
+                self.rfmod = fx_noAE_mod
+            else:
+                global fx_noAE_mod 
+                fx_noAE_mod = sio_load(c_dat['fxnoAE_dir'])
+            
             self.AE = False
         else:
             self.feat_cols = ['1300_02','43000_09','85550_13','94400_18',
                               'SYM_H index','AE']
-            self.rfmod = mltdm.den_fx.den_fx_mod
+            
+            if 'fx_mod' in globals():
+                self.rfmod = fx_mod
+            else:
+                global fx_mod
+                fx_mod = sio_load(c_dat['fx_dir'])
+                self.rfmod = fx_mod
+        
             self.AE = True
+            
+            
         self.input_f = input_f
         
         self.n_lat = n_lat

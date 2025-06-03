@@ -1,5 +1,8 @@
 # Configuration file for MLTDM module. 
 
+# All paths should be absolute paths
+# Don't use relative paths
+
 # Path to data directory
 data_dir: D:\data\mltdm
 
