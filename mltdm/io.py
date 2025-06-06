@@ -6,15 +6,20 @@ import pathlib
 import functools
 import shutil
 
-from tqdm.auto import tqdm
+#from tqdm.auto import tqdm
+from tqdm import tqdm
+
+from urllib.request import urlopen
+from urllib.parse import urljoin
+from urllib.request import urlretrieve
 
 import pandas as pd
 import numpy as np
 import netCDF4 as nc
 
 from scipy.io import readsav
-from urllib.parse import urljoin
-from urllib.request import urlretrieve
+
+
 
 
 import mltdm
@@ -30,35 +35,74 @@ def dl_file(url, filename):
         raise RuntimeError(f"Request to {url} returned status code {r.status_code}")
     file_size = int(r.headers.get('Content-Length', 0))
     
+    # if requests couldn't get file size drop encoding to get it
+    if file_size == 0:
+        rs = requests.head(url, headers={'Accept-Encoding': None})
+        file_size = int(rs.headers.get('Content-Length', 0))
+        
+    
     path = pathlib.Path(filename).expanduser().resolve()
     path.parent.mkdir(parents=True, exist_ok=True)
     
     desc = "(Unknown total file size)" if file_size == 0 else ""
+    post = f'Downloading: {url} to {filename}'
     r.raw.read = functools.partial(r.raw.read, decode_content=True)  # Decompress if needed
-    with tqdm.wrapattr(r.raw, "read", total=file_size, desc=desc) as r_raw:
+    with tqdm.wrapattr(r.raw, "read", total=file_size, desc=desc, postfix=post, position=0, leave=True) as r_raw:
         with path.open("wb") as f:
             shutil.copyfileobj(r_raw, f)
+    
+            
+def dl_file2(url, filename):  
+    r = requests.get(url, stream=True, allow_redirects=True)
 
+    if r.status_code != 200:
+        r.raise_for_status()  # Will only raise for 4xx codes, so...
+        raise RuntimeError(f"Request to {url} returned status code {r.status_code}")
+    file_size = int(r.headers.get('Content-Length', 0))
+    
+    # if requests couldn't get file size drop encoding to get it
+    if file_size == 0:
+        rs = requests.head(url, headers={'Accept-Encoding': None})
+        file_size = int(rs.headers.get('Content-Length', 0))
 
+    path = pathlib.Path(filename).expanduser().resolve()
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    desc = "(Unknown total file size)" if file_size == 0 else ""
+          
+    block_size = 1024
+    with tqdm(total=file_size, unit="B", unit_scale=True, desc=desc, position=0, leave=True) as pbar:
+        with open(filename, "wb") as file:
+            for data in r.iter_content(block_size):
+                pbar.update(len(data))
+                file.write(data)
+        
+
+        
 def fism_flare(http_path: str=mltdm.c_dat['fism_flare'],
                data_path: str=mltdm.c_dat['data_dir'],
                rcols: list=None):
     
     flare_f = 'flare_bands.nc'
-    http_f = os.path.join(http_path, flare_f)
+    http_f = urljoin(http_path, flare_f)
     local_f = os.path.join(data_path, flare_f)
     
-    if os.path.exists(local_f):
-        dat = nc.Dataset(local_f)
-    else:
-        with requests.get(http_f,stream=True) as r:
-            dat = nc.Dataset('in-mem-file', mode='r', memory=r.content)    
+    if not os.path.exists(local_f):
+        print(f'Downloading {http_f}')
+        dl_file(http_f, local_f)
+       
+    print(f'Loading: {local_f}')
+    dat = nc.Dataset(local_f)
+    #with requests.get(http_f,stream=True) as r:
+    #    dat = nc.Dataset('in-mem-file', mode='r', memory=r.content)    
     
     wvlen = np.array(dat.variables['wavelength'][:]) # median wavelengt
     wvbwd = np.array(dat.variables['band_width'][:]) # wavelength bandwidth
     ddoy = np.array(dat.variables['date'][:]) # day of year
     sec = np.array(dat.variables['date_sec'][:]) # second of day
     ssi = np.array(dat.variables['ssi'][:]) # Solar Spectral Irridance
+    
+    dat.close()
     
     #ssi is a 3D array
     # [doy,sec of day, wavelength]
@@ -67,8 +111,10 @@ def fism_flare(http_path: str=mltdm.c_dat['fism_flare'],
 
     # loop over all days and all seconds in 
     # days and generate a single dimension time index
-    t_i = [pd.to_datetime(b,format='%Y%j')+pd.DateOffset(seconds=int(i)) 
-           for b in ddoy for i in np.array(sec)]
+    tt = pd.to_datetime(ddoy,format='%Y%j')
+    dt = pd.to_timedelta(sec,unit='seconds')
+    
+    t_i = [x+y for x in tt for y in dt]
 
     # unravel ssi 
     df = pd.DataFrame()
@@ -107,7 +153,8 @@ def fism_flare_day(http_path: str=mltdm.c_dat['fism_flare'],
                 for x in d_ser]
     
     df_r = pd.DataFrame()
-    for fn_l, fn_w in zip(fn_local, fn_http):
+    print(f'Download and loading daily save files from {sdate}-{edate}')
+    for fn_l, fn_w in tqdm(zip(fn_local, fn_http), total=len(fn_local)):
         df_i = pd.DataFrame()
         
         if os.path.exists(fn_l):
@@ -146,7 +193,6 @@ def omni(http_path: str=mltdm.c_dat['omni'],
     
     sdate = pd.to_datetime(sdate)
     edate = pd.to_datetime(edate)
-    #
     d_ser = pd.date_range(start=f'{sdate.year}', 
                           end=f'{edate.year}', freq='12MS')
     if d_ser.empty:
@@ -176,17 +222,25 @@ def omni(http_path: str=mltdm.c_dat['omni'],
     # columns which hold dates
     dates = ['Year','DOY','Hour','Minute']
     
-    # read in all the data
-    if len(fn) > 1:
-        om_dat = pd.concat((pd.read_csv(f,sep='\s+', engine='python', 
-                                    names=list(dcols.keys()),header=None, 
-                                    on_bad_lines='skip') 
-                                    for f in fn), 
-                           ignore_index=True)
-    else:
-        om_dat = pd.read_csv(fn[0],sep='\s+', engine='python', 
-                                    names=list(dcols.keys()),header=None, 
-                                    on_bad_lines='skip') 
+    # read data in chunks so that we can have a progess bar 
+    # this only marginally slows things down
+    ll = 1000 # number of lines to read in at a time
+    nl = 105121 # number of lines in each file
+    ni = int(nl*len(fn)/ll)+1 # number of itterations
+    
+    om_dat = []
+    
+    with tqdm(total=ni) as pbar:
+        for f in fn:
+            for df_ch in pd.read_csv(
+                    f,sep='\s+', engine='python', 
+                    names=list(dcols.keys()),header=None, 
+                    on_bad_lines='skip', chunksize=ll):
+                
+                om_dat.append(df_ch)
+                pbar.update(1)
+                
+    om_dat = pd.concat(om_dat,ignore_index=True)
     
     # replace missing or bad data with NaN's
     for k, kval in dcols.items():
