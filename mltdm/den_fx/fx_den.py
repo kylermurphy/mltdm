@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import os
 
 
 
@@ -15,6 +16,7 @@ from skops.io import load as sio_load
 
 from mltdm.subsol import subsol
 from mltdm.config import config
+from mltdm.io import dl_file
 from mltdm.den_fx.fx_feat import load_feat
 
 
@@ -22,6 +24,12 @@ from mltdm.den_fx.fx_feat import load_feat
 # this is loaded previously but it's loaded
 # again here for transparency
 c_dat = config().dat
+
+# set up global variables for loading
+# models so that models are only loaded
+# once 
+fx_noAE_mod = None
+fx_mod = None
 
 class fx_den():
 
@@ -32,23 +40,25 @@ class fx_den():
             self.feat_cols = ['1300_02','43000_09','85550_13','94400_18',
                               'SYM_H index']
             
-            # only load the AE model once
-            if 'fx_noAE_mod' in globals():
+            global fx_noAE_mod
+            # only load the model once
+            if fx_noAE_mod:
                 self.rfmod = fx_noAE_mod
             else:
-                global fx_noAE_mod 
-                fx_noAE_mod = sio_load(c_dat['fxnoAE_dir'])
+                fx_noAE_mod = self.load(c_dat['fxnoAE_m'])
+                self.rfmod = fx_noAE_mod
             
             self.AE = False
         else:
             self.feat_cols = ['1300_02','43000_09','85550_13','94400_18',
                               'SYM_H index','AE']
             
-            if 'fx_mod' in globals():
+            global fx_mod
+            #only load the model once
+            if fx_mod:
                 self.rfmod = fx_mod
             else:
-                global fx_mod
-                fx_mod = sio_load(c_dat['fx_dir'])
+                fx_mod = self.load(c_dat['fx_m'])
                 self.rfmod = fx_mod
         
             self.AE = True
@@ -60,6 +70,23 @@ class fx_den():
         self.n_mlt = n_mlt
         self.setup_grid()
 
+    def load(self, mod):
+        
+        file_path = os.path.join(c_dat['data_dir'],mod)
+        
+        if not os.path.exists(file_path):
+            from urllib.parse import urljoin
+            url_path = urljoin(c_dat['zenodo'],f'files/{mod}')
+            
+            print('Model file does not exist: {file_path}')
+            print('Downloading model file from Zenodo to data directory')
+            print('Downloading: {url_path}')
+            
+            dl_file(url_path,file_path)
+            
+        print(f'Loading {mod}, this will take a few minutes.')    
+        return sio_load(os.path.join(c_dat['data_dir'], mod))
+            
 
     def setup_grid(self):
 

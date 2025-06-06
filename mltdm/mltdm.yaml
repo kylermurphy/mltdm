@@ -4,14 +4,18 @@
 # Don't use relative paths
 
 # Path to data directory
-data_dir: D:\data\mltdm
+data_dir: D:\mltdm
 
-# Path Fixed Altitude Density Model
-fx_dir: D:\data\mltdm\fx_den_bz2.skops
-fxnoAE_dir: D:\data\mltdm\fx_den_noAE_bz2.skops
+# File name of various modes
+fx_m: fx_den_bz2.skops
+fxnoAE_m: fx_den_noAE_bz2.skops
 
 # Link to FISM Flare Bands
 fism_flare: https://lasp.colorado.edu/eve/data_access/eve_data/fism/flare_bands/
 
-# Link to OMNID data
+# Link to OMNI data
 omni: https://spdf.gsfc.nasa.gov/pub/data/omni/high_res_omni/
+
+# Link to most recent release on Zenodo 
+zenodo: https://doi.org/10.5281/zenodo.15091330
+
