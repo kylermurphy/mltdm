@@ -4,6 +4,7 @@ import yaml
 import mltdm
 
 from pathlib import Path
+import requests
 
 class config():
     
@@ -49,7 +50,7 @@ class config():
             Dictionf containing all options from configuration file.
         """
         
-        req_keys = ['data_dir','fx_dir','fism_flare', 'omni']
+        req_keys = ['data_dir','fx_m', 'fxnoAE_m','fism_flare', 'omni', 'zenodo']
         
         with open(self.yaml) as stream:
             try:
@@ -63,6 +64,13 @@ class config():
             for k in req_keys:
                 kl.append(k in kd)
         
+        # the zenodo link points to the most
+        # recent release
+        # need to resolve the redirect so we
+        # can download all the needed files
+        if 'zenodo' in dat:
+            z_url = requests.get(dat['zenodo'])
+            dat['zenodo'] = z_url.url+'/'            
         
         if False in kl:
             print(f'The configuration file {self.yaml}') 
