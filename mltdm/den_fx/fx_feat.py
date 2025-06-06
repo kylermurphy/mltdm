@@ -5,6 +5,9 @@ import os
 import pandas as pd
 import numpy as np
 
+from urllib.parse import urljoin
+
+
 import mltdm
 from mltdm import io
 
@@ -91,9 +94,15 @@ def load_feat(sdate: str=None, edate: str=None):
     feat_f = os.path.join(mltdm.c_dat['data_dir'],'fx_den_feat.hdf')
     
     # if the feature data doesn't exist
-    # creat it
+    # download it
+    # if it can't be downloaded create it
     if not os.path.exists(feat_f):
-        create_feat()
+        try:
+           z_url = urljoin(mltdm.c_dat['zenodo'],'files/') 
+           f_url = urljoin(z_url,'fx_den_feat.hdf')
+           io.dl_file(f_url,feat_f)
+        except:
+            create_feat()
     
         
     # TODO check if sdate and edate are outside file ranges
