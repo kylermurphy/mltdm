@@ -40,8 +40,6 @@ def setup():
     if not os.path.exists(ft_d):
         url = urljoin(z_url,ft_f)
         dl_file(url,ft_d)
+
+    print('Setup Complete')
         
-        
-        
-    
-    
