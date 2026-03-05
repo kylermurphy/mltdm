@@ -293,7 +293,7 @@ def stream_kyoto_dst(url: str):
                 yr = line[slice(*year_xx)]+line[slice(*year_yy)]
                 mm = line[slice(*month)]
                 dd = line[slice(*day)]
-                dst = [line[slice(*s)] for s in dat]
+                dst = [line[slice(*s)].strip() for s in dat]
 
                 tr = pd.date_range(start=f'{yr}-{mm}-{dd}', periods=24, freq='h')
 
