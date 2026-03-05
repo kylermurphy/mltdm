@@ -84,6 +84,12 @@ def append_feat(edate: str=None):
     feat_new.to_hdf(out_f,key='fx_den_feat',
                     complevel=2,format='table', data_columns=['DateTime'])
     
+    out_f = os.path.join(mltdm.c_dat['data_dir'],'fx_den_feat.hdf')
+    
+    feat_dat = feat_dat.reset_index()
+    feat_dat.to_hdf(out_f,key='fx_den_feat',
+                    complevel=2,format='table', data_columns=['DateTime'])
+
     return feat_new
 
 

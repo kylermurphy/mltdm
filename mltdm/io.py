@@ -12,6 +12,7 @@ from tqdm import tqdm
 from urllib.request import urlopen
 from urllib.parse import urljoin
 from urllib.request import urlretrieve
+import urllib.error
 
 import pandas as pd
 import numpy as np
@@ -161,7 +162,12 @@ def fism_flare_day(http_path: str=mltdm.c_dat['fism_flare'],
             dat = readsav(fn_l)
         else:
             fn_t = os.path.join(data_path,'temp.sav')
-            urlretrieve(fn_w, fn_t)
+            try:
+                urlretrieve(fn_w, fn_t)
+            except urllib.error.HTTPError as err:
+                print(f'Could not download {fn_w}')
+                print(f'A HTTPError was thrown: {err.code} {err.reason}')
+                continue
             dat = readsav(fn_t)
         
         wvlen = dat['wavelength']
@@ -260,3 +266,37 @@ def omni(http_path: str=mltdm.c_dat['omni'],
         om_dat = om_dat[rcols]
     
     return om_dat
+
+def stream_kyoto_dst(url: str):
+    
+    id = (0,3)
+    year_yy = (3,5)
+    month = (5,7)
+    day = (8,10)
+    year_xx = (14,16)
+    dat = [(20,24),(24,28),(28,32),(32,36),(36,40),(40,44),(44,48),(48,52),
+        (52,56),(56,60),(60,64),(64,68),(68,72),(72,76),(76,80),(80,84),(84,88),
+        (88,92),(92,96),(96,100),(100,104),(104,108),(108,112),(112,116)]
+    avg = (116,120)
+
+
+    l_df = []
+
+    with requests.get(url, stream=True) as r:
+        r.raise_for_status()
+        for line in r.iter_lines():
+            if line:
+                line = line.decode('utf-8')
+                if line[0] == '[':
+                    break
+                id_val = line[slice(*id)]
+                yr = line[slice(*year_xx)]+line[slice(*year_yy)]
+                mm = line[slice(*month)]
+                dd = line[slice(*day)]
+                dst = [line[slice(*s)] for s in dat]
+
+                tr = pd.date_range(start=f'{yr}-{mm}-{dd}', periods=24, freq='h')
+
+                l_df.append(pd.DataFrame({'DateTime':tr,'DST':dst}))
+
+    return pd.concat(l_df, ignore_index=True)
