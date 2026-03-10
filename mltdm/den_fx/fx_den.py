@@ -169,10 +169,18 @@ class fx_den():
 
         return grid
 
-    def pred_den_mlt(self, sdate: str='2003-01-01 00:00:00', edate: str=None, hemisphere: str='North'):
+    def pred_den_mlt(self, sdate: str='2003-01-01 00:00:00', edate: str=None, 
+                     prelim: bool=False, hemisphere: str='North'):
         
-        self.feat = load_feat(sdate=sdate,edate=edate)[self.feat_cols+['DateTime']]
-        
+        # check if the features have been loaded
+        if hasattr(self, 'feat'):
+            dmin = self.feat['DateTime'].min()
+            dmax = self.feat['DateTime'].max()
+            if (pd.to_datetime(sdate) < dmin) or (pd.to_datetime(edate) > dmax):
+                self.feat = load_feat(sdate=sdate,edate=edate,prelim=prelim)[self.feat_cols+['DateTime']]
+        else:
+            self.feat = load_feat(sdate=sdate,edate=edate,prelim=prelim)[self.feat_cols+['DateTime']]
+
         if edate:
             ev_id = (self.feat['DateTime'] >= sdate) & (self.feat['DateTime'] <= edate)
             event = self.feat.loc[ev_id, self.feat_cols+['DateTime']].copy()
@@ -192,9 +200,17 @@ class fx_den():
 
         return grid
     
-    def pred_den_geo(self, sdate: str='2003-01-01 00:00:00', edate: str=None):
+    def pred_den_geo(self, sdate: str='2003-01-01 00:00:00', edate: str=None,
+                     prelim: bool=False):
         
-        self.feat = load_feat(sdate=sdate,edate=edate)[self.feat_cols+['DateTime']]
+        # check if the features have been loaded
+        if hasattr(self, 'feat'):
+            dmin = self.feat['DateTime'].min()
+            dmax = self.feat['DateTime'].max()
+            if (pd.to_datetime(sdate) < dmin) or (pd.to_datetime(edate) > dmax):
+                self.feat = load_feat(sdate=sdate,edate=edate,prelim=prelim)[self.feat_cols+['DateTime']]
+        else:
+            self.feat = load_feat(sdate=sdate,edate=edate,prelim=prelim)[self.feat_cols+['DateTime']]
         
         if edate:
             ev_id = (self.feat['DateTime'] >= sdate) & (self.feat['DateTime'] <= edate)
@@ -210,7 +226,8 @@ class fx_den():
         return grid
 
     def pred_den_orb(self, spos: np.ndarray, 
-                     tol: pd.Timedelta=pd.Timedelta('2.5 minute')):
+                     tol: pd.Timedelta=pd.Timedelta('2.5 minute'),
+                     prelim: bool=False):
         
         # spos should have datetime
         # sat lat and sat mlt to derive densities
@@ -218,8 +235,10 @@ class fx_den():
         # dataframe to derive densities
         
         # load feature data
-        feat = load_feat(sdate=spos['DateTime'].min(), 
-                         edate=spos['DateTime'].max())
+        
+        feat = load_feat(sdate=spos['DateTime'].min(),
+                         edate=spos['DateTime'].max(),
+                         prelim=prelim)
         
         # add cos and sin to the position array
         spos["cos_SatMagLT"] = np.cos(spos['SatMagLT']*2*np.pi/24.)
