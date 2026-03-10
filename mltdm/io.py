@@ -165,8 +165,8 @@ def fism_flare_day(http_path: str=mltdm.c_dat['fism_flare'],
             try:
                 urlretrieve(fn_w, fn_t)
             except urllib.error.HTTPError as err:
-                print(f'Could not download {fn_w}')
-                print(f'A HTTPError was thrown: {err.code} {err.reason}')
+                #print(f'Could not download {fn_w}')
+                #print(f'A HTTPError was thrown: {err.code} {err.reason}')
                 continue
             dat = readsav(fn_t)
         
@@ -268,7 +268,17 @@ def omni(http_path: str=mltdm.c_dat['omni'],
     return om_dat
 
 def stream_kyoto_dst(url: str):
-    
+    """Stream Kyoto DST data
+
+    Parameters
+    ----------
+    url : str
+        URL for Kyoto Dst data 
+
+    Returns
+    -------
+    Pandas dataframe with Datetime and Dst.
+    """    
     id = (0,3)
     year_yy = (3,5)
     month = (5,7)
@@ -282,7 +292,7 @@ def stream_kyoto_dst(url: str):
 
     l_df = []
 
-    with requests.get(url, stream=True) as r:
+    with requests.get(url, stream=True, timeout=30) as r:
         r.raise_for_status()
         for line in r.iter_lines():
             if line:
