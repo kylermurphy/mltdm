@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-
-
 import os
 import socket
 
@@ -10,8 +8,6 @@ from dateutil.relativedelta import relativedelta
 
 import pandas as pd
 import numpy as np
-
-
 
 from EUVpy.tools import processIndices
 from EUVpy.tools import spectralAnalysis
@@ -180,13 +176,14 @@ def load_prelim_feat(sdate: str=None, edate: str=None):
     # load omni data first
     # drop rows where Sym-H is NaN (this is the variable typically used)
     omni_cols = ['SYM_H index', 'AE', 'DateTime']
-    
+
     try:
-        omni_data = omni(sdate=sdate, edate=edate)[omni_cols].dropna(subset=['SYM_H index'])
+        omni_data = io.omni(sdate=sdate, edate=edate)[omni_cols].dropna(subset=['SYM_H index'])
 
         gd_omni = (omni_data['DateTime'] >= sdate) & (omni_data['DateTime'] <= edate)
         omni_data = omni_data[gd_omni]
     except:
+
         omni_data = pd.DataFrame({'DateTime':[]})
     
     # check what data we are missing
@@ -198,7 +195,7 @@ def load_prelim_feat(sdate: str=None, edate: str=None):
         if omni_data.empty:
             ks = pd.to_datetime(sdate)
         else:
-            ks = io.omni_data['DateTime'].max()
+            ks = omni_data['DateTime'].max()
         if ks.month == ke.month:
             ks = ks.replace(month=ke.month-1) 
         dt_ran = pd.date_range(start=ks,end=ke, freq='MS')    
